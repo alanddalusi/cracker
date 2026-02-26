@@ -16,7 +16,7 @@ USERS = {
     "jose":    b"$2a$10$roLcBYMh78zySl18hAStdeIH9dYvxkn0LqNoBsJ5iUldWmZ6JB036",
 }
 
-MAX_WORDS = 10000  # Top 10,000 passwords from rockyou
+MAX_WORDS = 10000
 
 
 def try_passwords_for_user(args):
@@ -46,12 +46,35 @@ def load_wordlist(path, max_words):
 
 
 def main():
+    import urllib.request
+    import gzip
     wordlist_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rockyou.txt")
-    
+
+    if not os.path.isfile(wordlist_path):
+        print(f"[!] No se encontró rockyou.txt. Descargando automáticamente...")
+        url = "https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt"
+        gz_url = "https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt.gz"
+        try:
+            try:
+                print(f"[*] Intentando descargar rockyou.txt...")
+                urllib.request.urlretrieve(url, wordlist_path)
+            except Exception:
+                print(f"[*] Descarga directa fallida, intentando con rockyou.txt.gz...")
+                gz_path = wordlist_path + ".gz"
+                urllib.request.urlretrieve(gz_url, gz_path)
+                print(f"[*] Descomprimiendo rockyou.txt.gz...")
+                with gzip.open(gz_path, 'rb') as f_in, open(wordlist_path, 'wb') as f_out:
+                    f_out.write(f_in.read())
+                os.remove(gz_path)
+            print(f"[+] rockyou.txt descargado correctamente.")
+        except Exception as e:
+            print(f"[!] Error al descargar rockyou.txt: {e}")
+            print(f"    Descárgalo manualmente y colócalo en la carpeta del script.")
+            return
+
     print("=" * 60)
     print("  CRACKER BCRYPT con rockyou.txt + multiprocessing")
     print("=" * 60)
-    
     print(f"\n[*] Cargando las top {MAX_WORDS} contraseñas de rockyou.txt...")
     passwords = load_wordlist(wordlist_path, MAX_WORDS)
     print(f"[*] Cargadas: {len(passwords)} palabras")
